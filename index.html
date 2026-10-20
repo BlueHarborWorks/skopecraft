@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Scopecraft is a reusable research-scope and agent-handoff builder for focused, evidence-based analysis.">
+  <title>Scopecraft — Research Scope &amp; Handoff Builder</title>
+  <style>
+    :root {
+      --paper: #f5f3ec;
+      --surface: #fbfaf6;
+      --ink: #20231f;
+      --muted: #686b64;
+      --line: #d8d6cc;
+      --line-strong: #b9b7ac;
+      --accent: #28725a;
+      --accent-soft: #dcebe4;
+      --scope: #e8bb48;
+      --scope-soft: #f6ebc8;
+      --danger: #a24c3f;
+      --radius: 18px;
+      --shadow: 0 18px 52px rgba(47, 50, 43, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(40, 114, 90, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(40, 114, 90, 0.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 32px 32px;
+      font-family: Geist, "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    button, input, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .shell {
+      width: min(1480px, calc(100% - 40px));
+      margin: 20px auto 80px;
+      display: grid;
+      grid-template-columns: 255px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .rail {
+      position: sticky;
+      top: 20px;
+      min-height: calc(100dvh - 40px);
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(251, 250, 246, 0.9);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      gap: 11px;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      color: white;
+      background: var(--accent);
+      font: 700 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .04em;
+    }
+    .brand strong { display: block; font-size: 14px; letter-spacing: -.01em; }
+    .brand small { color: var(--muted); font-size: 11px; }
+
+    nav { display: grid; gap: 4px; }
+    nav a {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-height: 38px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color .2s ease, background .2s ease, transform .2s ease;
+    }
+    nav a:hover { color: var(--ink); background: var(--accent-soft); transform: translateX(2px); }
+    nav a::before {
+      content: attr(data-step);
+      width: 20px;
+      color: var(--accent);
+      font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .rail-note {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .rail-note b { color: var(--ink); }
+
+    .actions {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 0;
+      background: linear-gradient(var(--paper) 65%, transparent);
+    }
+    .action {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+    }
+    .action:hover { background: white; border-color: var(--accent); }
+    .action:active { transform: translateY(1px) scale(.985); }
+    .action.primary { color: white; border-color: var(--accent); background: var(--accent); }
+    .action.primary:hover { background: #205d49; }
+    .action.adapt { border-color: #c18b17; box-shadow: inset 0 0 0 1px #e4b84f; }
+
+    main { min-width: 0; }
+    .document {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(260px, .7fr);
+      gap: 48px;
+      min-height: 560px;
+      padding: clamp(42px, 7vw, 92px);
+      border-bottom: 1px solid var(--line);
+      align-items: end;
+    }
+    .eyebrow, .section-number, .label, .status, .meta-key {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: .11em;
+    }
+    .eyebrow { color: var(--accent); font-size: 11px; font-weight: 750; }
+    h1 {
+      max-width: 850px;
+      margin: 18px 0 22px;
+      font-size: clamp(42px, 6.2vw, 86px);
+      line-height: .93;
+      letter-spacing: -.065em;
+    }
+    .dek { max-width: 690px; margin: 0; color: var(--muted); font-size: clamp(18px, 2vw, 24px); line-height: 1.35; }
+
+    .hero-meta {
+      display: grid;
+      gap: 22px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line-strong);
+    }
+    .meta-row { display: grid; grid-template-columns: 90px 1fr; gap: 14px; }
+    .meta-key { color: var(--muted); font-size: 9px; padding-top: 4px; }
+    .meta-value { font-size: 13px; font-weight: 650; }
+
+    section {
+      scroll-margin-top: 70px;
+      padding: clamp(42px, 6vw, 78px) clamp(28px, 7vw, 92px);
+      border-bottom: 1px solid var(--line);
+    }
+    section:last-child { border-bottom: 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 100px minmax(0, 1fr);
+      gap: 22px;
+      margin-bottom: 34px;
+    }
+    .section-number { color: var(--accent); font-size: 11px; padding-top: 8px; }
+    h2 { margin: 0; font-size: clamp(30px, 4vw, 48px); line-height: 1; letter-spacing: -.045em; }
+    h3 { margin: 0 0 10px; font-size: 18px; letter-spacing: -.025em; }
+    p { margin: 0 0 14px; }
+    .section-intro { max-width: 760px; margin-top: 14px; color: var(--muted); font-size: 17px; }
+
+    .editable {
+      border-radius: 5px;
+      outline: none;
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    .editable:hover { background: rgba(40, 114, 90, .07); }
+    .editable:focus { background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .field {
+      display: inline;
+      color: #165a44;
+      border-bottom: 1px dashed var(--accent);
+      font-weight: 650;
+    }
+
+    .thesis {
+      max-width: 1040px;
+      padding: 28px 30px;
+      border-left: 5px solid var(--scope);
+      background: var(--scope-soft);
+      font-size: clamp(20px, 2.4vw, 30px);
+      font-weight: 680;
+      line-height: 1.32;
+      letter-spacing: -.02em;
+    }
+    .question {
+      max-width: 980px;
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+      font-size: 19px;
+    }
+    .question b { color: var(--accent); }
+
+    .pathway {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 0;
+      counter-reset: path;
+    }
+    .path-step {
+      position: relative;
+      min-height: 170px;
+      padding: 24px 19px;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      border-right: 1px solid var(--line);
+      counter-increment: path;
+    }
+    .path-step:first-child { border-left: 1px solid var(--line-strong); border-radius: 14px 0 0 14px; }
+    .path-step:last-child { border-radius: 0 14px 14px 0; }
+    .path-step::before {
+      content: "0" counter(path);
+      display: block;
+      margin-bottom: 32px;
+      color: var(--accent);
+      font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .path-step b { display: block; margin-bottom: 6px; font-size: 14px; }
+    .path-step span { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+    .scope-grid, .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .scope-box { padding: 28px; border-top: 4px solid var(--accent); background: #eef5f1; }
+    .scope-box.exclude { border-color: var(--danger); background: #f6ece9; }
+    .scope-box .label { color: var(--accent); font-size: 10px; font-weight: 750; }
+    .scope-box.exclude .label { color: var(--danger); }
+    ul.clean { margin: 18px 0 0; padding: 0; list-style: none; }
+    ul.clean li { position: relative; margin: 10px 0; padding-left: 18px; }
+    ul.clean li::before { content: ""; position: absolute; left: 0; top: .68em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .55; }
+
+    .rule {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border: 1px solid #d9c47c;
+      border-radius: 12px;
+      background: #fff9e7;
+      font-size: 14px;
+    }
+    .rule strong { display: block; margin-bottom: 4px; }
+
+    .matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+    table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    th, td { padding: 16px; text-align: left; vertical-align: top; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th { background: #eeede7; color: var(--muted); font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: .08em; }
+    td { font-size: 13px; }
+    td:first-child { width: 20%; font-weight: 700; }
+    .rating {
+      display: inline-block;
+      padding: 4px 7px;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-transform: uppercase;
+    }
+
+    .rating-scale { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; overflow: hidden; margin-top: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
+    .rating-item { min-height: 120px; padding: 18px; background: var(--surface); }
+    .rating-item .status { display: block; margin-bottom: 22px; color: var(--accent); font-size: 9px; font-weight: 750; }
+    .rating-item b { font-size: 13px; }
+    .rating-item p { margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+    .evidence-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 44px; }
+    .evidence-level { padding: 17px 0; border-top: 1px solid var(--line); }
+    .evidence-level:first-child { border-top: 2px solid var(--ink); }
+    .evidence-level b { display: block; font-size: 13px; }
+    .evidence-level span { color: var(--muted); font-size: 12px; }
+    .citation-fields { display: grid; gap: 12px; }
+    .citation-row { display: grid; grid-template-columns: 70px 1fr; gap: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .citation-row .label { color: var(--muted); font-size: 9px; padding-top: 4px; }
+    .citation-row div:last-child { font-size: 13px; }
+
+    .handoff {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 22px;
+    }
+    .prompt {
+      min-height: 310px;
+      padding: 26px;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      background: #252a26;
+      color: #ecf1eb;
+      font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+    }
+    .checklist { padding: 26px; border: 1px solid var(--line); border-radius: 14px; }
+    .check-item { display: grid; grid-template-columns: 20px 1fr; gap: 10px; margin: 14px 0; font-size: 13px; }
+    .check-box { width: 16px; height: 16px; margin-top: 2px; border: 1.5px solid var(--accent); border-radius: 4px; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px clamp(28px, 7vw, 92px);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 4;
+      padding: 12px 15px;
+      border-radius: 10px;
+      color: white;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1000px) {
+      .shell { grid-template-columns: 1fr; width: min(900px, calc(100% - 24px)); }
+      .rail { position: relative; min-height: auto; }
+      nav { grid-template-columns: repeat(3, 1fr); }
+      .rail-note { display: none; }
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+      .pathway { grid-template-columns: 1fr; }
+      .path-step, .path-step:first-child, .path-step:last-child { min-height: auto; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+      .path-step::before { margin-bottom: 8px; }
+      .rating-scale { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .shell { margin-top: 8px; }
+      .rail { padding: 16px; }
+      .brand { margin-bottom: 14px; }
+      nav { grid-template-columns: 1fr 1fr; }
+      .actions { overflow-x: auto; justify-content: flex-start; }
+      .hero { gap: 34px; padding: 48px 24px; }
+      section { padding: 46px 24px; }
+      .section-head { grid-template-columns: 1fr; gap: 7px; }
+      .scope-grid, .two-col, .evidence-grid, .handoff { grid-template-columns: 1fr; }
+      .rating-scale { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; }
+    }
+
+    @media print {
+      @page { size: letter; margin: 0.55in; }
+      body { background: white; font-size: 10pt; }
+      .shell { display: block; width: 100%; margin: 0; }
+      .rail, .actions, .toast { display: none !important; }
+      .document { border: 0; border-radius: 0; box-shadow: none; }
+      .hero { min-height: auto; padding: 0 0 34px; }
+      h1 { font-size: 42pt; }
+      section { padding: 32px 0; break-inside: avoid; }
+      .editable:hover, .editable:focus { background: transparent; box-shadow: none; }
+      .field { color: inherit; border-bottom: 0; }
+      .pathway { grid-template-columns: repeat(5, 1fr); }
+      .scope-box, .thesis, .rule, .rating-item { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .matrix-wrap { overflow: visible; }
+      table { min-width: 0; }
+      .prompt { color: var(--ink); background: #f0f0ed; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Document navigation">
+      <div class="brand">
+        <div class="brand-mark">RH</div>
+        <div><strong>Scopecraft</strong><small>Research handoff builder</small></div>
+      </div>
+      <nav>
+        <a href="#thesis" data-step="01">Thesis</a>
+        <a href="#chain" data-step="02">Control chain</a>
+        <a href="#scope" data-step="03">Scope guard</a>
+        <a href="#matrix" data-step="04">Comparison</a>
+        <a href="#evidence" data-step="05">Evidence</a>
+        <a href="#updates" data-step="06">Updates</a>
+        <a href="#handoff" data-step="07">Agent prompt</a>
+      </nav>
+      <div class="rail-note">
+        <b>How to use</b><br>
+        Change the title, then choose <b>Adapt whole document</b>. Fine-tune any green-underlined text afterward. Edits autosave here.
+      </div>
+    </aside>
+
+    <main>
+      <div class="actions" aria-label="Document actions">
+        <button class="action adapt" id="adaptButton" type="button">Adapt whole document</button>
+        <button class="action" id="copyButton" type="button">Build + copy prompt</button>
+        <button class="action" id="downloadButton" type="button">Download filled HTML</button>
+        <button class="action" id="resetButton" type="button">Reset</button>
+        <button class="action primary" id="printButton" type="button">Print / PDF</button>
+      </div>
+
+      <article class="document" id="document">
+        <header class="hero">
+          <div>
+            <div class="eyebrow">Research handover / scope contract</div>
+            <h1 class="editable" contenteditable="true" data-field="title">Local agent, endpoint AI &amp; data-security controls</h1>
+            <p class="dek editable" contenteditable="true" data-field="subtitle">A focused comparison of products that can observe, govern, and prove human or AI-agent actions across endpoint and data paths.</p>
+          </div>
+          <div class="hero-meta">
+            <div class="meta-row"><span class="meta-key">Owner</span><span class="meta-value editable field" contenteditable="true" data-field="owner">Research lead</span></div>
+            <div class="meta-row"><span class="meta-key">Audience</span><span class="meta-value editable field" contenteditable="true" data-field="audience">Product, sales, and technical strategy</span></div>
+            <div class="meta-row"><span class="meta-key">Vendors</span><span class="meta-value editable field" contenteditable="true" data-field="vendors">Vendor A · Vendor B · Vendor C</span></div>
+            <div class="meta-row"><span class="meta-key">As of</span><span class="meta-value editable field" contenteditable="true" data-field="date">YYYY-MM-DD</span></div>
+            <div class="meta-row"><span class="meta-key">Deliverable</span><span class="meta-value editable field" contenteditable="true" data-field="deliverable">Comparative paper and evidence matrix</span></div>
+          </div>
+        </header>
+
+        <section id="thesis">
+          <div class="section-head">
+            <div class="section-number">01 / Thesis</div>
+            <div><h2>Define the decision</h2><p class="section-intro">Write one thesis that every product claim must help answer.</p></div>
+          </div>
+          <div class="thesis editable" contenteditable="true" data-field="thesis">Determine whether any product, module, or realistic combination in each vendor portfolio can identify a human or AI agent and control that actor’s specific action across local endpoints and protected data paths.</div>
+          <p class="question editable" contenteditable="true" data-field="research_question"><b>Research question.</b> Can the portfolio connect actor identity to a specific command, API call, file operation, browser action, or data movement event; apply policy at the point of action; and produce evidence that the control worked?</p>
+        </section>
+
+        <section id="chain">
+          <div class="section-head">
+            <div class="section-number">02 / Chain</div>
+            <div><h2>Test the complete control chain</h2><p class="section-intro">A product can contribute to the thesis without completing it. Record exactly where each capability enters and leaves the chain.</p></div>
+          </div>
+          <div class="pathway">
+            <div class="path-step"><b class="editable" contenteditable="true" data-field="chain_1_title">Actor identity</b><span class="editable" contenteditable="true" data-field="chain_1_body">Human, service, local agent, autonomous agent, device, workload.</span></div>
+            <div class="path-step"><b class="editable" contenteditable="true" data-field="chain_2_title">Action visibility</b><span class="editable" contenteditable="true" data-field="chain_2_body">Command, process, API operation, file access, browser event, data transfer.</span></div>
+            <div class="path-step"><b class="editable" contenteditable="true" data-field="chain_3_title">Policy decision</b><span class="editable" contenteditable="true" data-field="chain_3_body">Conditions join identity, context, resource, intent, and risk.</span></div>
+            <div class="path-step"><b class="editable" contenteditable="true" data-field="chain_4_title">Enforcement</b><span class="editable" contenteditable="true" data-field="chain_4_body">Allow, block, constrain, require approval, isolate, or remediate.</span></div>
+            <div class="path-step"><b class="editable" contenteditable="true" data-field="chain_5_title">Investigation &amp; proof</b><span class="editable" contenteditable="true" data-field="chain_5_body">Analytics, incident timeline, reporting, logs, evidence, and outcome.</span></div>
+          </div>
+          <div class="rating-scale" aria-label="Capability rating scale">
+            <div class="rating-item"><span class="status">Level 4</span><b>Complete capability</b><p>Connects the defined chain end to end for the target domain.</p></div>
+            <div class="rating-item"><span class="status">Level 3</span><b>Partial capability</b><p>Covers a meaningful subset, path, subject, or activity with explicit limits.</p></div>
+            <div class="rating-item"><span class="status">Level 2</span><b>Visibility / response</b><p>Observes or investigates without producing the required control outcome.</p></div>
+            <div class="rating-item"><span class="status">Level 1</span><b>No demonstrated capability</b><p>No primary evidence ties the product to the decision under study.</p></div>
+          </div>
+        </section>
+
+        <section id="scope">
+          <div class="section-head">
+            <div class="section-number">03 / Guard</div>
+            <div><h2>Hold the scope line</h2><p class="section-intro">Use this section as an editorial gate before adding any product or claim.</p></div>
+          </div>
+          <div class="scope-grid">
+            <div class="scope-box">
+              <span class="label">In scope</span>
+              <ul class="clean editable" contenteditable="true" data-field="in_scope">
+                <li>Identity attribution for the target human or AI actor</li>
+                <li>Policy over the target command, action, file, API, browser, CLI, SDK, or data path</li>
+                <li>Inline enforcement and approval controls</li>
+                <li>Command centers, advanced analytics, incident management, reporting, and logging when they prove or investigate the target action</li>
+                <li>Product combinations that form a realistic supported control path</li>
+              </ul>
+            </div>
+            <div class="scope-box exclude">
+              <span class="label">Out of scope unless directly connected</span>
+              <ul class="clean editable" contenteditable="true" data-field="out_scope">
+                <li>Generic AI guardrails, prompt filtering, model probes, and red teaming</li>
+                <li>Generic posture, asset discovery, endpoint blocking, or network security</li>
+                <li>Broad MCP, A2A, or tool authorization without the target action path</li>
+                <li>Marketing category claims without action-level evidence</li>
+                <li>Adjacent features that do not control, investigate, or prove the core action</li>
+              </ul>
+            </div>
+          </div>
+          <div class="rule editable" contenteditable="true" data-field="equivalence_rule"><strong>Equivalence rule</strong> Do not treat indirect prevention as equivalent to action-level control. State the exact governed step, its dependency on the target workflow, and what remains outside policy.</div>
+        </section>
+
+        <section id="matrix">
+          <div class="section-head">
+            <div class="section-number">04 / Compare</div>
+            <div><h2>Map portfolios to the thesis</h2><p class="section-intro">Replace vendors and rows. Preserve the columns so every conclusion traces to the same test.</p></div>
+          </div>
+          <div class="matrix-wrap">
+            <table>
+              <thead><tr><th>Vendor / product path</th><th>Subject + activity</th><th>Policy + outcome</th><th>Investigation + proof</th><th>Rating / boundary</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="editable" contenteditable="true" data-field="vendor_a">Vendor A<br>Product / module combination</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_a_actor">Name the relevant subject, object, context, and observable activity.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_a_policy">Describe the policy condition, decision point, and outcome.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_a_proof">Name the console, event, incident, report, and log evidence.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_a_rating"><span class="rating">Unrated</span><br>State the precise limit.</td>
+                </tr>
+                <tr>
+                  <td class="editable" contenteditable="true" data-field="vendor_b">Vendor B<br>Product / module combination</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_b_actor">Name the relevant subject, object, context, and observable activity.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_b_policy">Describe the policy condition, decision point, and outcome.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_b_proof">Name the console, event, incident, report, and log evidence.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_b_rating"><span class="rating">Unrated</span><br>State the precise limit.</td>
+                </tr>
+                <tr>
+                  <td class="editable" contenteditable="true" data-field="vendor_c">Vendor C<br>Product / module combination</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_c_actor">Name the relevant subject, object, context, and observable activity.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_c_policy">Describe the policy condition, decision point, and outcome.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_c_proof">Name the console, event, incident, report, and log evidence.</td>
+                  <td class="editable" contenteditable="true" data-field="vendor_c_rating"><span class="rating">Unrated</span><br>State the precise limit.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="evidence">
+          <div class="section-head">
+            <div class="section-number">05 / Evidence</div>
+            <div><h2>Make every conclusion auditable</h2><p class="section-intro">Use current primary sources and distinguish verified behavior from unresolved boundaries.</p></div>
+          </div>
+          <div class="evidence-grid">
+            <div>
+              <div class="evidence-level"><b>1 · Product and admin documentation</b><span>Configuration, policy fields, enforcement semantics, logs, and supported paths.</span></div>
+              <div class="evidence-level"><b>2 · Release notes and lifecycle records</b><span>Availability, preview status, regional limits, entitlement, and version dates.</span></div>
+              <div class="evidence-level"><b>3 · Official product announcements</b><span>Use for new capability framing; verify operational details in documentation.</span></div>
+              <div class="evidence-level"><b>4 · Secondary analysis</b><span>Use for discovery or context; do not let it carry a decisive capability claim.</span></div>
+            </div>
+            <div class="citation-fields">
+              <div class="citation-row"><span class="label">Claim</span><div class="editable" contenteditable="true" data-field="evidence_claim">The exact factual statement this evidence supports.</div></div>
+              <div class="citation-row"><span class="label">Source</span><div class="editable" contenteditable="true" data-field="evidence_source">Page title, publisher, direct URL, and access date.</div></div>
+              <div class="citation-row"><span class="label">Quote</span><div class="editable" contenteditable="true" data-field="evidence_quote">Short supporting passage or exact configuration field.</div></div>
+              <div class="citation-row"><span class="label">Status</span><div class="editable" contenteditable="true" data-field="evidence_status">Current / GA / Preview / Unverified / Requires tenant validation.</div></div>
+              <div class="citation-row"><span class="label">Boundary</span><div class="editable" contenteditable="true" data-field="evidence_boundary">What the source does not establish.</div></div>
+              <div class="citation-row"><span class="label">Freshness</span><div class="editable" contenteditable="true" data-field="evidence_freshness">Source date, corpus refresh date, and any known documentation lag.</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="updates">
+          <div class="section-head">
+            <div class="section-number">06 / Updates</div>
+            <div><h2>Reconcile new announcements</h2><p class="section-intro">A launch can change a row without changing the paper’s thesis. Test the delta before rewriting conclusions.</p></div>
+          </div>
+          <div class="two-col">
+            <div>
+              <h3>Update under review</h3>
+              <p class="editable" contenteditable="true" data-field="update_name"><span class="field">Product or announcement</span>, published <span class="field">YYYY-MM-DD</span>.</p>
+              <p class="editable" contenteditable="true" data-field="update_delta">Describe the newly available identity, action visibility, policy, enforcement, analytics, incident, reporting, or logging capability.</p>
+            </div>
+            <div>
+              <h3>Required disposition</h3>
+              <ul class="clean editable" contenteditable="true" data-field="update_actions">
+                <li>Name the affected matrix row and prior conclusion</li>
+                <li>Confirm availability and entitlement</li>
+                <li>Verify the supported path in admin documentation</li>
+                <li>Rescore only the affected control-chain stages</li>
+                <li>Record unresolved limits without weakening settled facts</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="handoff">
+          <div class="section-head">
+            <div class="section-number">07 / Handoff</div>
+            <div><h2>Give the next agent a hard boundary</h2><p class="section-intro">This block is designed to be copied into a new research or writing thread.</p></div>
+          </div>
+          <div class="handoff">
+            <div class="prompt editable" contenteditable="true" data-field="agent_prompt">Continue the research and writing for “[TOPIC / DOMAIN].”
+
+CORE THESIS
+[Paste the thesis from Section 01.]
+
+CONTROL TEST
+Evaluate ${textField('chain_1_title')} → ${textField('chain_2_title')} → ${textField('chain_3_title')} → ${textField('chain_4_title')} → ${textField('chain_5_title')}. Rate each portfolio as complete, partial, visibility/response only, or no demonstrated capability.
+
+IN SCOPE
+[Paste the relevant inclusion rules.]
+
+SCOPE GUARD
+Do not add adjacent capabilities unless they directly control, investigate, or prove the target action. Do not treat indirect prevention as equivalent to action-level policy. Name the exact governed step and remaining boundary.
+
+EVIDENCE STANDARD
+Prefer current primary product documentation, admin guides, release notes, and lifecycle records. Use announcements to identify changes, then verify operational details. State settled facts directly. Label only genuine uncertainty as Preview, Unverified, Inferred boundary, Not confirmed, or Requires validation.
+
+DELIVERABLE
+Update the comparison matrix, conclusions, citations, and evidence dates. Preserve the paper’s thesis and explain precisely whether each new fact changes the verdict.</div>
+            <div class="checklist">
+              <h3>Acceptance checklist</h3>
+              <div class="check-item"><span class="check-box"></span><span>Every section answers the core thesis.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>Each product is tied to a supported capability path.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>Every stage in the defined capability chain is assessed separately.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>Indirect controls are labeled with their dependency and boundary.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>Analytics and incident functions support a thesis-relevant event.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>Primary citations are current and directly support the claim.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>Preview, entitlement, region, and tenant-validation limits are explicit.</span></div>
+              <div class="check-item"><span class="check-box"></span><span>The conclusion states full, partial, visibility-only, or absent control.</span></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <span>Scopecraft · Research scope and handoff builder</span>
+          <span>Editable · autosaved locally · print-ready</span>
+        </footer>
+      </article>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const storageKey = 'research-handover-template-v1';
+      const editables = [...document.querySelectorAll('[data-field]')];
+      const initial = Object.fromEntries(editables.map(el => [el.dataset.field, el.innerHTML]));
+      const toast = document.getElementById('toast');
+      let toastTimer;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      function readSaved() {
+        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); }
+        catch { return {}; }
+      }
+
+      function save() {
+        const values = Object.fromEntries(editables.map(el => [el.dataset.field, el.innerHTML]));
+        localStorage.setItem(storageKey, JSON.stringify(values));
+      }
+
+      const saved = readSaved();
+      editables.forEach(el => {
+        if (Object.prototype.hasOwnProperty.call(saved, el.dataset.field)) el.innerHTML = saved[el.dataset.field];
+        el.addEventListener('input', save);
+      });
+
+      document.getElementById('printButton').addEventListener('click', () => window.print());
+
+      function textField(name) {
+        return document.querySelector(`[data-field="${name}"]`)?.innerText.trim() || '';
+      }
+
+      function buildPrompt() {
+        return `Continue the research and writing for “${textField('title')}.”
+
+CORE THESIS
+${textField('thesis')}
+
+RESEARCH QUESTION
+${textField('research_question')}
+
+VENDORS / PORTFOLIOS
+${textField('vendors')}
+
+CONTROL TEST
+Evaluate actor identity → action visibility → policy decision → inline enforcement → investigation and proof. Rate each portfolio as full control, partial control, visibility/response only, or no demonstrated capability.
+
+IN SCOPE
+${textField('in_scope')}
+
+OUT OF SCOPE UNLESS DIRECTLY CONNECTED
+${textField('out_scope')}
+
+SCOPE GUARD
+${textField('equivalence_rule')}
+Do not add adjacent capabilities unless they directly affect, investigate, or prove the decision under study. Name the exact governed object, step, outcome, and remaining boundary.
+
+EVIDENCE STANDARD
+Prefer current primary product documentation, admin guides, release notes, and lifecycle records. Use announcements to identify changes, then verify operational details. State settled facts directly. Label only genuine uncertainty as Preview, Unverified, Inferred boundary, Not confirmed, or Requires validation.
+
+CURRENT UPDATE UNDER REVIEW
+${textField('update_name')}
+${textField('update_delta')}
+
+DELIVERABLE
+${textField('deliverable')}. Update the comparison matrix, conclusions, citations, and evidence dates. Preserve the paper’s thesis and explain precisely whether each new fact changes the verdict.`;
+      }
+
+      function setText(name, value) {
+        const el = document.querySelector(`[data-field="${name}"]`);
+        if (el) el.textContent = value;
+      }
+
+      function setList(name, items) {
+        const el = document.querySelector(`[data-field="${name}"]`);
+        if (!el) return;
+        el.replaceChildren(...items.map(item => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          return li;
+        }));
+      }
+
+      function adaptWholeDocument() {
+        const topic = textField('title').replace(/\s+/g, ' ').trim();
+        if (!topic || /^(topic\s*\/\s*domain|research handover)$/i.test(topic)) {
+          showToast('Enter a specific topic in the title first');
+          document.querySelector('[data-field="title"]').focus();
+          return;
+        }
+
+        setText('subtitle', `A focused comparison of products and product combinations relevant to ${topic}, assessed through one capability, control, and evidence framework.`);
+        setText('thesis', `Determine whether any product, module, or realistic combination in each vendor portfolio can address ${topic} in whole or in part, where each capability applies, and what evidence proves the outcome.`);
+        setText('research_question', `Research question. Which portfolios provide meaningful visibility, policy, enforcement, investigation, and proof for ${topic}; how do those functions connect; and where does each supported path stop?`);
+
+        setText('chain_1_title', 'Subject & context');
+        setText('chain_1_body', `Identify the users, systems, data, applications, workloads, or agents relevant to ${topic}.`);
+        setText('chain_2_title', 'Activity visibility');
+        setText('chain_2_body', 'Observe and classify the events, actions, content, state, or movement that matter to the decision.');
+        setText('chain_3_title', 'Policy decision');
+        setText('chain_3_body', 'Combine identity, context, resource, behavior, risk, and business conditions.');
+        setText('chain_4_title', 'Control outcome');
+        setText('chain_4_body', 'Allow, block, constrain, approve, isolate, remediate, or otherwise change the relevant outcome.');
+        setText('chain_5_title', 'Investigation & proof');
+        setText('chain_5_body', 'Connect analytics, incidents, reports, logs, and evidence to the governed activity and result.');
+
+        setList('in_scope', [
+          `Products and modules that directly address ${topic}`,
+          'Visibility and classification needed to make the relevant decision',
+          'Policy, prevention, enforcement, approval, and remediation controls',
+          'Command centers, analytics, incident management, reporting, and logging when they investigate or prove the relevant outcome',
+          'Realistic supported product combinations that complete part or all of the capability chain',
+        ]);
+        setList('out_scope', [
+          `Adjacent capabilities without a direct, explained connection to ${topic}`,
+          'Marketing category claims without operational or administrative evidence',
+          'Generic visibility, posture, or security functions that do not affect the decision under study',
+          'Indirect outcomes presented as equivalent to direct policy or enforcement',
+          'Preview, deprecated, or unavailable functions presented as generally available',
+        ]);
+        setText('equivalence_rule', `Equivalence rule. Do not treat an adjacent or indirect capability as equivalent to direct control of ${topic}. State the exact governed object, activity, path, dependency, outcome, and remaining boundary.`);
+        setText('update_name', `New ${topic} product, module, announcement, or documentation change; published YYYY-MM-DD.`);
+        setText('update_delta', 'Describe the newly available visibility, policy, enforcement, analytics, incident, reporting, or logging capability and identify the exact comparison row it changes.');
+        setText('agent_prompt', buildPrompt());
+        save();
+        showToast(`Document adapted to ${topic}`);
+      }
+
+      document.getElementById('adaptButton').addEventListener('click', adaptWholeDocument);
+
+      document.getElementById('copyButton').addEventListener('click', async () => {
+        const promptElement = document.querySelector('[data-field="agent_prompt"]');
+        const prompt = buildPrompt();
+        promptElement.innerText = prompt;
+        save();
+        try {
+          await navigator.clipboard.writeText(prompt);
+          showToast('Agent prompt built and copied');
+        } catch {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(promptElement);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          showToast('Prompt selected — copy it manually');
+        }
+      });
+
+      document.getElementById('downloadButton').addEventListener('click', () => {
+        save();
+        const clone = document.documentElement.cloneNode(true);
+        clone.querySelector('.toast')?.classList.remove('show');
+        const html = '<!doctype html>\n' + clone.outerHTML;
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const title = document.querySelector('[data-field="title"]').innerText.trim()
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'research-handover';
+        link.href = url;
+        link.download = title + '.html';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Filled HTML downloaded');
+      });
+
+      document.getElementById('resetButton').addEventListener('click', () => {
+        editables.forEach(el => { el.innerHTML = initial[el.dataset.field]; });
+        localStorage.removeItem(storageKey);
+        showToast('Template reset');
+      });
+    })();
+  </script>
+</body>
+</html>
