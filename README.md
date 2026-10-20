@@ -1,6 +1,6 @@
-# Scopecraft
+# Skopecraft
 
-Scopecraft is a standalone, browser-based research-scope and agent-handoff builder. It turns one topic into a consistent thesis, capability chain, scope guard, comparison matrix, evidence standard, update review, and reusable agent prompt.
+Skopecraft is a standalone, browser-based research-scope and agent-handoff builder. It turns one topic into a consistent thesis, capability chain, scope guard, comparison matrix, evidence standard, update review, and reusable agent prompt.
 
 ## Use
 
@@ -17,7 +17,7 @@ Then visit <http://localhost:4173>.
 3. Edit any field in place. Changes autosave in the browser.
 4. Use **Build + copy prompt**, **Download filled HTML**, or **Print / PDF**.
 
-Scopecraft has no build step, runtime dependencies, analytics, or network calls.
+Skopecraft has no build step, runtime dependencies, analytics, or network calls.
 
 ## Development
 
